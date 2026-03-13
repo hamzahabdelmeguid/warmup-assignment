@@ -7,7 +7,19 @@ const fs = require("fs");
 // Returns: string formatted as h:mm:ss
 // ============================================================
 function getShiftDuration(startTime, endTime) {
-    // TODO: Implement this function
+  timeStr = timeStr.trim();
+    let parts = timeStr.split(" ");
+    let timePart = parts[0];
+    let period = parts[1].toLowerCase(); // "am" or "pm"
+    let [h, m, s] = timePart.split(":").map(Number);
+
+    if (period === "am") {
+        if (h === 12) h = 0; // 12:xx:xx am = 0:xx:xx (midnight hour)
+    } else {
+        // pm
+        if (h !== 12) h += 12; // 12:xx:xx pm stays 12, others add 12
+    }
+    return h * 3600 + m * 60 + s;
 }
 
 // ============================================================
@@ -17,7 +29,10 @@ function getShiftDuration(startTime, endTime) {
 // Returns: string formatted as h:mm:ss
 // ============================================================
 function getIdleTime(startTime, endTime) {
-    // TODO: Implement this function
+    let h = Math.floor(totalSeconds / 3600);
+    let m = Math.floor((totalSeconds % 3600) / 60);
+    let s = totalSeconds % 60;
+    return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
 // ============================================================
