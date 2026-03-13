@@ -7,20 +7,31 @@ const fs = require("fs");
 // Returns: string formatted as h:mm:ss
 // ============================================================
 function getShiftDuration(startTime, endTime) {
-  timeStr = timeStr.trim();
-    let parts = timeStr.split(" ");
-    let timePart = parts[0];
-    let period = parts[1].toLowerCase(); // "am" or "pm"
-    let [h, m, s] = timePart.split(":").map(Number);
+let startParts = startTime.trim().split(" ");
+    let startTimeParts = startParts[0].split(":").map(Number);
+    let startPeriod = startParts[1].toLowerCase();
+    let startH = startTimeParts[0], startM = startTimeParts[1], startS = startTimeParts[2];
+    if (startPeriod === "am" && startH === 12) startH = 0;
+    if (startPeriod === "pm" && startH !== 12) startH += 12;
+    let startTotal = startH * 3600 + startM * 60 + startS;
 
-    if (period === "am") {
-        if (h === 12) h = 0; // 12:xx:xx am = 0:xx:xx (midnight hour)
-    } else {
-        // pm
-        if (h !== 12) h += 12; // 12:xx:xx pm stays 12, others add 12
-    }
-    return h * 3600 + m * 60 + s;
+    let endParts = endTime.trim().split(" ");
+    let endTimeParts = endParts[0].split(":").map(Number);
+    let endPeriod = endParts[1].toLowerCase();
+    let endH = endTimeParts[0], endM = endTimeParts[1], endS = endTimeParts[2];
+    if (endPeriod === "am" && endH === 12) endH = 0;
+    if (endPeriod === "pm" && endH !== 12) endH += 12;
+    let endTotal = endH * 3600 + endM * 60 + endS;
+
+    let diff = endTotal - startTotal;
+    if (diff < 0) diff += 24 * 3600;
+
+    let h = Math.floor(diff / 3600);
+    let m = Math.floor((diff % 3600) / 60);
+    let s = diff % 60;
+    return h + ":" + String(m).padStart(2, '0') + ":" + String(s).padStart(2, '0');
 }
+
 
 // ============================================================
 // Function 2: getIdleTime(startTime, endTime)
@@ -29,11 +40,39 @@ function getShiftDuration(startTime, endTime) {
 // Returns: string formatted as h:mm:ss
 // ============================================================
 function getIdleTime(startTime, endTime) {
-    let h = Math.floor(totalSeconds / 3600);
-    let m = Math.floor((totalSeconds % 3600) / 60);
-    let s = totalSeconds % 60;
-    return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  let startParts = startTime.trim().split(" ");
+    let startTimeParts = startParts[0].split(":").map(Number);
+    let startPeriod = startParts[1].toLowerCase();
+    let startH = startTimeParts[0], startM = startTimeParts[1], startS = startTimeParts[2];
+    if (startPeriod === "am" && startH === 12) startH = 0;
+    if (startPeriod === "pm" && startH !== 12) startH += 12;
+    let startTotal = startH * 3600 + startM * 60 + startS;
+
+    let endParts = endTime.trim().split(" ");
+    let endTimeParts = endParts[0].split(":").map(Number);
+    let endPeriod = endParts[1].toLowerCase();
+    let endH = endTimeParts[0], endM = endTimeParts[1], endS = endTimeParts[2];
+    if (endPeriod === "am" && endH === 12) endH = 0;
+    if (endPeriod === "pm" && endH !== 12) endH += 12;
+    let endTotal = endH * 3600 + endM * 60 + endS;
+
+    let deliveryStart = 8 * 3600;
+    let deliveryEnd = 22 * 3600;
+
+    let idleSeconds = 0;
+    if (startTotal < deliveryStart) {
+        idleSeconds += Math.min(endTotal, deliveryStart) - startTotal;
+    }
+    if (endTotal > deliveryEnd) {
+        idleSeconds += endTotal - Math.max(startTotal, deliveryEnd);
+    }
+
+    let h = Math.floor(idleSeconds / 3600);
+    let m = Math.floor((idleSeconds % 3600) / 60);
+    let s = idleSeconds % 60;
+    return h + ":" + String(m).padStart(2, '0') + ":" + String(s).padStart(2, '0');
 }
+
 
 // ============================================================
 // Function 3: getActiveTime(shiftDuration, idleTime)
