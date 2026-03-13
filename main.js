@@ -81,8 +81,18 @@ function getIdleTime(startTime, endTime) {
 // Returns: string formatted as h:mm:ss
 // ============================================================
 function getActiveTime(shiftDuration, idleTime) {
-    // TODO: Implement this function
+    let sParts = shiftDuration.trim().split(":").map(Number);
+    let iParts = idleTime.trim().split(":").map(Number);
+    let shiftSec = sParts[0] * 3600 + sParts[1] * 60 + sParts[2];
+    let idleSec = iParts[0] * 3600 + iParts[1] * 60 + iParts[2];
+    let activeSec = shiftSec - idleSec;
+
+    let h = Math.floor(activeSec / 3600);
+    let m = Math.floor((activeSec % 3600) / 60);
+    let s = activeSec % 60;
+    return h + ":" + String(m).padStart(2, '0') + ":" + String(s).padStart(2, '0');
 }
+
 
 // ============================================================
 // Function 4: metQuota(date, activeTime)
@@ -91,7 +101,16 @@ function getActiveTime(shiftDuration, idleTime) {
 // Returns: boolean
 // ============================================================
 function metQuota(date, activeTime) {
-    // TODO: Implement this function
+    let dateParts = date.split("-").map(Number);
+    let year = dateParts[0], month = dateParts[1], day = dateParts[2];
+
+    let isEid = (year === 2025 && month === 4 && day >= 10 && day <= 30);
+    let quotaSec = isEid ? 6 * 3600 : (8 * 3600 + 24 * 60);
+
+    let aParts = activeTime.trim().split(":").map(Number);
+    let activeSec = aParts[0] * 3600 + aParts[1] * 60 + aParts[2];
+
+    return activeSec >= quotaSec;
 }
 
 // ============================================================
