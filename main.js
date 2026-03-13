@@ -120,7 +120,70 @@ function metQuota(date, activeTime) {
 // Returns: object with 10 properties or empty object {}
 // ============================================================
 function addShiftRecord(textFile, shiftObj) {
-    // TODO: Implement this function
+     let data = fs.readFileSync(textFile, { encoding: 'utf8', flag: 'r' });
+    let lines = data.split("\n").filter(line => line.trim() !== "");
+    let header = lines[0];
+    let records = [];
+    for (let i = 1; i < lines.length; i++) {
+        let cols = lines[i].split(",");
+        records.push({
+            driverID: cols[0].trim(),
+            driverName: cols[1].trim(),
+            date: cols[2].trim(),
+            startTime: cols[3].trim(),
+            endTime: cols[4].trim(),
+            shiftDuration: cols[5].trim(),
+            idleTime: cols[6].trim(),
+            activeTime: cols[7].trim(),
+            metQuota: cols[8].trim() === "true",
+            hasBonus: cols[9].trim() === "true"
+        });
+  }
+
+    for (let r of records) {
+        if (r.driverID === shiftObj.driverID && r.date === shiftObj.date) {
+            return {};
+        }
+    }
+
+    let shiftDuration = getShiftDuration(shiftObj.startTime, shiftObj.endTime);
+    let idle = getIdleTime(shiftObj.startTime, shiftObj.endTime);
+    let active = getActiveTime(shiftDuration, idle);
+    let quota = metQuota(shiftObj.date, active);
+
+    let newRecord = {
+        driverID: shiftObj.driverID,
+        driverName: shiftObj.driverName,
+        date: shiftObj.date,
+        startTime: shiftObj.startTime,
+        endTime: shiftObj.endTime,
+        shiftDuration: shiftDuration,
+        idleTime: idle,
+        activeTime: active,
+        metQuota: quota,
+        hasBonus: false
+    };
+
+    let lastIndex = -1;
+    for (let i = 0; i < records.length; i++) {
+        if (records[i].driverID === shiftObj.driverID) {
+            lastIndex = i;
+        }
+    }
+
+    if (lastIndex === -1) {
+        records.push(newRecord);
+    } else {
+        records.splice(lastIndex + 1, 0, newRecord);
+    }
+
+    let outputLines = [header];
+    for (let r of records) {
+        outputLines.push(r.driverID + "," + r.driverName + "," + r.date + "," + r.startTime + "," + r.endTime + "," + r.shiftDuration + "," + r.idleTime + "," + r.activeTime + "," + r.metQuota + "," + r.hasBonus);
+    }
+    fs.writeFileSync(textFile, outputLines.join("\n") + "\n", { encoding: 'utf8' });
+
+    return newRecord;       
 }
 
 // ============================================================
@@ -132,9 +195,39 @@ function addShiftRecord(textFile, shiftObj) {
 // Returns: nothing (void)
 // ============================================================
 function setBonus(textFile, driverID, date, newValue) {
-    // TODO: Implement this function
-}
+     let data = fs.readFileSync(textFile, { encoding: 'utf8', flag: 'r' });
+    let lines = data.split("\n").filter(line => line.trim() !== "");
+    let header = lines[0];
+    let records = [];
+    for (let i = 1; i < lines.length; i++) {
+        let cols = lines[i].split(",");
+        records.push({
+            driverID: cols[0].trim(),
+            driverName: cols[1].trim(),
+            date: cols[2].trim(),
+            startTime: cols[3].trim(),
+            endTime: cols[4].trim(),
+            shiftDuration: cols[5].trim(),
+            idleTime: cols[6].trim(),
+            activeTime: cols[7].trim(),
+            metQuota: cols[8].trim() === "true",
+            hasBonus: cols[9].trim() === "true"
+        });
+    }
 
+    for (let r of records) {
+        if (r.driverID === driverID && r.date === date) {
+            r.hasBonus = newValue;
+            break;
+        }
+    }
+
+    let outputLines = [header];
+    for (let r of records) {
+        outputLines.push(r.driverID + "," + r.driverName + "," + r.date + "," + r.startTime + "," + r.endTime + "," + r.shiftDuration + "," + r.idleTime + "," + r.activeTime + "," + r.metQuota + "," + r.hasBonus);
+    }
+    fs.writeFileSync(textFile, outputLines.join("\n") + "\n", { encoding: 'utf8' });
+}
 // ============================================================
 // Function 7: countBonusPerMonth(textFile, driverID, month)
 // textFile: (typeof string) path to shifts text file
@@ -143,7 +236,30 @@ function setBonus(textFile, driverID, date, newValue) {
 // Returns: number (-1 if driverID not found)
 // ============================================================
 function countBonusPerMonth(textFile, driverID, month) {
-    // TODO: Implement this function
+    let data = fs.readFileSync(textFile, { encoding: 'utf8', flag: 'r' });
+    let lines = data.split("\n").filter(line => line.trim() !== "");
+    let monthNum = parseInt(month);
+
+    let driverExists = false;
+    let count = 0;
+
+    for (let i = 1; i < lines.length; i++) {
+        let cols = lines[i].split(",");
+        let id = cols[0].trim();
+        let recordDate = cols[2].trim();
+        let hasBonus = cols[9].trim() === "true";
+
+        if (id === driverID) {
+            driverExists = true;
+            let recordMonth = parseInt(recordDate.split("-")[1]);
+            if (recordMonth === monthNum && hasBonus) {
+                count++;
+            }
+        }
+    }
+
+    if (!driverExists) return -1;
+    return count;
 }
 
 // ============================================================
